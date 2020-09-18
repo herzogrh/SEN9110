@@ -331,15 +331,8 @@ employee_queue_max = []
 prepaid_queue_max = []
 paying_queue_max = []
 
-
-replications = 10
-if len(sys.argv) > 1:
-    replications = int(sys.argv[1])
-
-if replications == 1:
-    trace = True
-
-for exp in range(0,replications):
+# Do the experiments
+for exp in range(0,REPLICATIONS):
 
 
     # Create the Environment
