@@ -298,32 +298,44 @@ class PayingBooth(Server):
                 self.car.activate()
                 
 
-def avg_employ(lst):
+def max(lst):
+    cleanedlst = [x for x in lst if str(x) != 'nan']
+    if len(cleanedlst)==0:
+        return 0
+
+    max = np.max(cleanedlst)
+    return np.max(cleanedlst)
+
+def avg(lst):
     cleanedlst = [x for x in lst if str(x) != 'nan']
     if len(cleanedlst)==0:
         return 0
     return sum(cleanedlst)/len(cleanedlst)
 
-def avg_tour(lst):
-    cleanedlst = [x for x in lst if str(x) != 'nan']
-    if len(cleanedlst)==0:
-        return 0
-    return sum(cleanedlst)/(len(cleanedlst)/2)              
+   
 
 #queue statistics
 employee_length = []
 prepaid_length = []
 paying_length = []
 
+employee_95 = []
+prepaid_95 = []
+paying_95 = []
+
 employee_queue = []
 prepaid_queue = []
 paying_queue = []
+
+employee_queue_max = []
+prepaid_queue_max = []
+paying_queue_max = []
+
 
 replications = 10
 if len(sys.argv) > 1:
     replications = int(sys.argv[1])
 
-trace = False
 if replications == 1:
     trace = True
 
@@ -385,34 +397,49 @@ for exp in range(0,replications):
 
     employee_length += [mainland_line1.length.mean()]
     employee_length += [island_line1.length.mean()]
-    prepaid_length += [mainland_line2.length.mean()]
-    prepaid_length += [mainland_line2_1.length.mean()]
-    prepaid_length += [island_line2.length.mean()]
-    prepaid_length += [island_line2_1.length.mean()]
-    paying_length += [mainland_line3.length.mean()]
-    paying_length += [mainland_line3_1.length.mean()]
-    paying_length += [island_line3.length.mean()]
-    paying_length += [island_line3_1.length.mean()]
+    prepaid_length += [mainland_line2.length.mean() + mainland_line2_1.length.mean()]
+    prepaid_length += [island_line2.length.mean() + island_line2_1.length.mean()]
+    paying_length += [mainland_line3.length.mean() + mainland_line3_1.length.mean()]
+    paying_length += [island_line3.length.mean() + island_line3_1.length.mean()]
+
+    employee_95 += [mainland_line1.length.percentile(95)]
+    employee_95 += [island_line1.length.percentile(95)]
+    prepaid_95 += [mainland_line2.length.percentile(95) + mainland_line2_1.length.percentile(95)]
+    prepaid_95 += [island_line2.length.percentile(95) + island_line2_1.length.percentile(95)]
+    paying_95 += [mainland_line3.length.percentile(95) + mainland_line3_1.length.percentile(95)]
+    paying_95 += [island_line3.length.percentile(95) + island_line3_1.length.percentile(95)]
 
 
     employee_queue += [mainland_line1.length_of_stay.mean()]
     employee_queue += [island_line1.length_of_stay.mean()]
-    prepaid_queue += [mainland_line2.length_of_stay.mean()]
-    prepaid_queue += [mainland_line2_1.length_of_stay.mean()]
-    prepaid_queue += [island_line2.length_of_stay.mean()]
-    prepaid_queue += [island_line2_1.length_of_stay.mean()]
-    paying_queue += [mainland_line3.length_of_stay.mean()]
-    paying_queue += [mainland_line3_1.length_of_stay.mean()]
-    paying_queue += [island_line3.length_of_stay.mean()]
-    paying_queue += [island_line3_1.length_of_stay.mean()]
+    prepaid_queue += [mainland_line2.length_of_stay.mean() + mainland_line2_1.length_of_stay.mean()]
+    prepaid_queue += [island_line2.length_of_stay.mean() + island_line2_1.length_of_stay.mean()]
+    paying_queue += [mainland_line3.length_of_stay.mean() + mainland_line3_1.length_of_stay.mean()]
+    paying_queue += [island_line3.length_of_stay.mean() + island_line3_1.length_of_stay.mean()]
+
+    employee_queue_max += [mainland_line1.length_of_stay.maximum()]
+    employee_queue_max += [island_line1.length_of_stay.maximum()]
+    prepaid_queue_max += [mainland_line2.length_of_stay.maximum() + mainland_line2_1.length_of_stay.maximum()]
+    prepaid_queue_max += [island_line2.length_of_stay.maximum() + island_line2_1.length_of_stay.maximum()]
+    paying_queue_max += [mainland_line3.length_of_stay.maximum() + mainland_line3_1.length_of_stay.maximum()]
+    paying_queue_max += [island_line3.length_of_stay.maximum() + island_line3_1.length_of_stay.maximum()]
 
 print()
 print()
-print("employee length of queue mean [s]:", avg_employ(employee_length))
-print("prepaid length of queue mean [persons]:", avg_tour(prepaid_length))
-print("paying length of queue mean [s]:", avg_tour(paying_length))
+print("employee length of queue mean [cars]:", avg(employee_length))
+print("prepaid length of queue mean [cars]:", avg(prepaid_length))
+print("paying length of queue mean [cars]:", avg(paying_length))
 print()
-print("employee_queueing time mean [s]:", avg_employ(employee_queue))
-print("prepaid_queueing time mean [persons]:", avg_tour(prepaid_queue))
-print("paying_queueing time time mean [s]:", avg_tour(paying_queue))
+print("employee length of queue mean 95% [cars]:", avg(employee_95))
+print("prepaid length of queue mean 95% [cars]:", avg(prepaid_95))
+print("paying length of queue mean 95% [cars]:", avg(paying_95))
+print()
+print()
+print("employee_queueing average time [mins]:", avg(employee_queue))
+print("prepaid_queueing average time [mins]:", avg(prepaid_queue))
+print("paying_queueing average time [mins]:", avg(paying_queue))
+print()
+print("employee_queueing maximum time [mins]:", max(employee_queue))
+print("prepaid_queueing maximum time [mins]:", max(prepaid_queue))
+print("paying_queueing  maximum time [mins]:", max(paying_queue))
 print()
