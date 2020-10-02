@@ -221,8 +221,18 @@ class Ferry(sim.Component):
             
             # Check location
             if self.location == "mainland":
+                
+                # If the tourists on average have to wait 
+
+                
                 # Check if there are any cars left in the queues 
-                if len(mainland_line1) > 0:
+                ## If there are tourist cars waiting and the tourist have to wait twice as long as the employees on average, first load the tourist cars
+                if (len(mainland_line3) > 0) and (Waitingtime_tourist_unpaid.mean() > Waitingtime_employee.mean()):
+                    self.car = mainland_line3.pop()
+                    self.carsonferry += 1
+                    yield self.hold(LOADING_TIME.sample())
+                    self.car.activate(process='setTally')                      
+                elif len(mainland_line1) > 0:
                     self.car = mainland_line1.pop()
                     self.carsonferry += 1
                     yield self.hold(LOADING_TIME.sample())
@@ -246,7 +256,12 @@ class Ferry(sim.Component):
 
             # Same goes for the Island
             if self.location == "island":
-                if len(island_line1) > 0:
+                if (len(island_line3) > 0) and (Waitingtime_tourist_unpaid.mean() > Waitingtime_employee.mean()):
+                    self.car = island_line3.pop()
+                    self.carsonferry += 1
+                    yield self.hold(LOADING_TIME.sample())
+                    self.car.activate(process='setTally')  
+                elif len(island_line1) > 0:
                     self.car = island_line1.pop()
                     self.carsonferry += 1
                     yield self.hold(LOADING_TIME.sample())
@@ -386,7 +401,6 @@ for i in range(REPLICATIONS):
     Waitingtime_tourist_prepaid = sim.Monitor('Waitingtime_tourist_prepaid') #tally
     Waitingtime_tourist_unpaid = sim.Monitor('Waitingtime_tourist_unpaid') #tally
     Waitingtime_employee = sim.Monitor('Waitingtime_employee') #tally
-
     Ferrydelay = sim.Monitor(name='Ferrydelay', level=True, initial_tally=0)
 
     # Calls the function which has all the animation code in
@@ -413,5 +427,11 @@ print("Length Mainland Line 3: " + str(4*math.ceil(stat.mean(length_mainland_lin
 print("Length Island Line 1: " + str(4*math.ceil(stat.mean(length_island_line1))) + " m")
 print("Length Island Line 2: " + str(4*math.ceil(stat.mean(length_island_line2))) + " m")
 print("Length Island Line 3: " + str(4*math.ceil(stat.mean(length_island_line3))) + " m")
+
+# %%
+Waitingtime_tourist_prepaid.print_statistics()
+Waitingtime_tourist_unpaid.print_statistics()
+Waitingtime_employee.print_statistics()
+
 
 # %%
