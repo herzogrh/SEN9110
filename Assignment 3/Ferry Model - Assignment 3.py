@@ -12,19 +12,25 @@ Created on Fri Oct  2 14:11:22 2020
 # %% Package
 
 import salabim as sim
-import numpy as np
+#import numpy as np
 import pandas as pd
-import time, sys, random, os
+import random, os
+#import time, sys
 
 # %% Global Setting
 
-CAR_NUMBERS = pd.read_csv("TimeTable.csv", sep=";")
+dir_path = os.path.dirname(os.path.realpath(__file__))
+CAR_NUMBERS = pd.read_csv(dir_path+"\\TimeTable.csv", sep=";")
+#CAR_NUMBERS = pd.read_csv("TimeTable.csv", sep=";")
 
+# Time unit in minutes
 SAILING_TIME = sim.Triangular(10,18,13)
 NUMBER_OF_CARS = sim.Triangular(70,80,75)
 PAYMENT_TIME = sim.Triangular(1,4,2)
+PAYMENT_HICCUP_TIME = 0.25 + sim.Uniform(0.5,0.75) + 0.25 # Walk elsewhere + Meet supervisor + Return
+PAYMENT_HICCUP_CHANCE = 0.05
 LOADING_TIME = sim.Exponential(1/6) # 10 seconds per car
-UNLOADING_TIME = sim.Exponential(5/60) # 5 seconds per time
+UNLOADING_TIME = sim.Exponential(5/60) # 5 seconds per car
 WAITING_TIME_PREPAID = sim.Exponential(0.5) # minutes
 PERCENTAGE_PREPAID = 0.2 
 
@@ -95,6 +101,8 @@ class Car(sim.Component):
                         sim.Animate(image="tourist_car_mainland.png", t1=env.now()+ANIMATION_TIME_CAR, x0=50, y0=100, x1=75, alpha1=0)
                     yield self.request(payment_booth_mainland)
                     yield self.hold(PAYMENT_TIME.sample())
+                    if random.random < PAYMENT_HICCUP_CHANCE:
+                        yield self.hold(PAYMENT_HICCUP_TIME.sample())
                     self.release(payment_booth_mainland)
                     self.enter(mainland_line3)
                     
@@ -373,6 +381,3 @@ do_animation()
 # Run the experiments
 env.run(duration=SIM_TIME)
 #%% Sandbox
-import os
-dir_path = os.path.dirname(os.path.realpath(__file__))
-CAR_NUMBERS = pd.read_csv(dir_path+"\\TimeTable.csv", sep=";")
