@@ -14,14 +14,15 @@ Created on Fri Oct  2 14:11:22 2020
 import salabim as sim
 #import numpy as np
 import pandas as pd
-import random, os
+import random, os, math
+import statistics as stat
 #import time, sys
 
 # %% Global Setting
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-CAR_NUMBERS = pd.read_csv(dir_path+"\\TimeTable.csv", sep=";")
-#CAR_NUMBERS = pd.read_csv("TimeTable.csv", sep=";")
+#dir_path = os.path.dirname(os.path.realpath(__file__))
+#CAR_NUMBERS = pd.read_csv(dir_path+"//TimeTable.csv", sep=";")
+CAR_NUMBERS = pd.read_csv("TimeTable.csv", sep=";")
 
 # Time unit in minutes
 SAILING_TIME = sim.Triangular(10,18,13)
@@ -38,7 +39,7 @@ SIM_TIME = 60*24 # Time in minutes
 REPLICATIONS = 10 # Number of experiment replications
 ANIMATION = False
 ANIMATION_TIME_CAR = 5
-TRACE = True
+TRACE = False
 
 # %% Car Component
 
@@ -162,7 +163,7 @@ class CarGenerator(sim.Component):
 
                 # Wait for the correct amount of time until creating the next car
                 # Interarrival times are based on an exponential equation
-                yield self.hold(sim.Exponential(60*time_span / number_cars))
+                yield self.hold(sim.Exponential(60 / number_cars))
             else:
                 yield self.hold(60*time_span)
 
@@ -339,53 +340,78 @@ def do_animation():
         
 #%% Run Environment
 
-# Create the Environment
-env = sim.Environment(time_unit='minutes', trace= TRACE)
-env.modelname("Canadian Ferries Simulation")
 
-# States
-departuretime = sim.State('departuretime', value=False)
-ferryloaded = sim.State('ferryloaded', value=False)
+# Create the replication monitors
+length_mainland_line1, length_mainland_line2, length_mainland_line3 = [], [], []
+length_island_line1, length_island_line2, length_island_line3 = [], [], []
 
-# Queues
-mainland_line1, mainland_line2, mainland_line3 = sim.Queue('mainland_line1'), sim.Queue('mainland_line2'), sim.Queue('mainland_line3')
-island_line1, island_line2, island_line3 = sim.Queue('island_line1'), sim.Queue('island_line2'), sim.Queue('island_line3')
-mainland_line2_1, mainland_line3_1 = sim.Queue('mainland_line2_1'), sim.Queue('mainland_line3_1')
-island_line2_1, island_line3_1 = sim.Queue('island_line2_1'), sim.Queue('island_line3_1')
 
-# Create a ferry at the beginning of the simulation
-CanadianFerry = Ferry(capacity = NUMBER_OF_CARS.sample(), carsonferry = 0, ferryrides = 0, location = "mainland")
+# Replications
+for i in range(REPLICATIONS):
 
-# Activate the Ferry operators on 6:30
-FerryOperator(at=6.5*60)
+    # Create the Environment
+    env = sim.Environment(time_unit='minutes', trace= TRACE, random_seed=i )
+    env.modelname("Canadian Ferries Simulation")
 
-# Activate the Booth operator on 9:00
-BoothOperator(at=9*60)
+    # States
+    departuretime = sim.State('departuretime', value=False)
+    ferryloaded = sim.State('ferryloaded', value=False)
 
-# Initiate the Car Generators
-CarGenerator(cartype="employee", location="island")
-CarGenerator(cartype="employee", location="mainland")
-CarGenerator(cartype="tourist", location="island")
-CarGenerator(cartype="tourist", location="mainland")
+    # Queues
+    mainland_line1, mainland_line2, mainland_line3 = sim.Queue('mainland_line1'), sim.Queue('mainland_line2'), sim.Queue('mainland_line3')
+    island_line1, island_line2, island_line3 = sim.Queue('island_line1'), sim.Queue('island_line2'), sim.Queue('island_line3')
 
-# Resources
-payment_booth_mainland = sim.Resource('payment_booth_mainland', capacity=1)
-payment_booth_island = sim.Resource('payment_booth_island', capacity=1)
-prepaid_booth_mainland = sim.Resource('prepaid_booth_mainland', capacity=1)
-prepaid_booth_island = sim.Resource('prepaid_booth_island', capacity=1)
+    # Create a ferry at the beginning of the simulation
+    CanadianFerry = Ferry(capacity = NUMBER_OF_CARS.sample(), carsonferry = 0, ferryrides = 0, location = "mainland")
 
-# Monitors
-Waitingtime_tourist_prepaid = sim.Monitor('Waitingtime_tourist_prepaid') #tally
-Waitingtime_tourist_unpaid = sim.Monitor('Waitingtime_tourist_unpaid') #tally
-Waitingtime_employee = sim.Monitor('Waitingtime_employee') #tally
+    # Activate the Ferry operators on 6:30
+    FerryOperator(at=6.5*60)
 
-Ferrydelay = sim.Monitor(name='Ferrydelay', level=True, initial_tally=0)
+    # Activate the Booth operator on 9:00
+    BoothOperator(at=9*60)
 
-# Calls the function which has all the animation code in
-do_animation()
+    # Initiate the Car Generators
+    CarGenerator(cartype="employee", location="island")
+    CarGenerator(cartype="employee", location="mainland")
+    CarGenerator(cartype="tourist", location="island")
+    CarGenerator(cartype="tourist", location="mainland")
 
-# Run the experiments
-env.run(duration=SIM_TIME)
+    # Resources
+    payment_booth_mainland = sim.Resource('payment_booth_mainland', capacity=1)
+    payment_booth_island = sim.Resource('payment_booth_island', capacity=1)
+    prepaid_booth_mainland = sim.Resource('prepaid_booth_mainland', capacity=1)
+    prepaid_booth_island = sim.Resource('prepaid_booth_island', capacity=1)
+
+    # Monitors
+    Waitingtime_tourist_prepaid = sim.Monitor('Waitingtime_tourist_prepaid') #tally
+    Waitingtime_tourist_unpaid = sim.Monitor('Waitingtime_tourist_unpaid') #tally
+    Waitingtime_employee = sim.Monitor('Waitingtime_employee') #tally
+
+    Ferrydelay = sim.Monitor(name='Ferrydelay', level=True, initial_tally=0)
+
+    # Calls the function which has all the animation code in
+    do_animation()
+
+    # Run the experiments
+    env.run(duration=SIM_TIME)
+
+    # After the run finished, add the data to the outcome monitors
+    length_mainland_line1.append(mainland_line1.length.percentile(80))
+    length_mainland_line2.append(mainland_line2.length.percentile(80))
+    length_mainland_line3.append(mainland_line3.length.percentile(80))
+    length_island_line1.append(island_line1.length.percentile(80))
+    length_island_line2.append(island_line2.length.percentile(80))
+    length_island_line3.append(island_line3.length.percentile(80))
+
 #%% Sandbox
 
-Waitingtime_employee.print_histograms()
+#Waitingtime_employee.print_histograms()
+#mainland_line1.print_histograms()
+print("Length Mainland Line 1: " + str(4*math.ceil(stat.mean(length_mainland_line1))) + " m")
+print("Length Mainland Line 2: " + str(4*math.ceil(stat.mean(length_mainland_line2)))+ " m")
+print("Length Mainland Line 3: " + str(4*math.ceil(stat.mean(length_mainland_line3))) + " m \n")
+print("Length Island Line 1: " + str(4*math.ceil(stat.mean(length_island_line1))) + " m")
+print("Length Island Line 2: " + str(4*math.ceil(stat.mean(length_island_line2))) + " m")
+print("Length Island Line 3: " + str(4*math.ceil(stat.mean(length_island_line3))) + " m")
+
+# %%
