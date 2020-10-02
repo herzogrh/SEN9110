@@ -101,7 +101,9 @@ class Car(sim.Component):
                         sim.Animate(image="tourist_car_mainland.png", t1=env.now()+ANIMATION_TIME_CAR, x0=50, y0=100, x1=75, alpha1=0)
                     yield self.request(payment_booth_mainland)
                     yield self.hold(PAYMENT_TIME.sample())
-                    if random.random < PAYMENT_HICCUP_CHANCE:
+                    
+                    # 5% of payment is a bit longer due to validate the credit card
+                    if random.random() < PAYMENT_HICCUP_CHANCE:
                         yield self.hold(PAYMENT_HICCUP_TIME.sample())
                     self.release(payment_booth_mainland)
                     self.enter(mainland_line3)
@@ -112,6 +114,10 @@ class Car(sim.Component):
                         sim.Animate(image="tourist_car_island.png", t1=env.now()+ANIMATION_TIME_CAR, x0=900, y0=100, x1=875, alpha1=0)
                     yield self.request(payment_booth_island)
                     yield self.hold(PAYMENT_TIME.sample())
+                    
+                    # 5% of payment is a bit longer due to validate the credit card
+                    if random.random() < PAYMENT_HICCUP_CHANCE:
+                        yield self.hold(PAYMENT_HICCUP_TIME.sample())
                     self.release(payment_booth_island)
                     self.enter(island_line3)
                     
@@ -381,3 +387,5 @@ do_animation()
 # Run the experiments
 env.run(duration=SIM_TIME)
 #%% Sandbox
+
+Waitingtime_employee.print_histograms()
